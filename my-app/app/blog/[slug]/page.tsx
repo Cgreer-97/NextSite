@@ -4,6 +4,10 @@ import matter from 'gray-matter';
 import { remark } from 'remark';
 import html from 'remark-html';
 
+type Params = {
+  slug: string;
+};
+
 export async function generateStaticParams() {
   const postsDir = path.join(process.cwd(), 'posts');
   const filenames = fs.readdirSync(postsDir);
@@ -13,19 +17,17 @@ export async function generateStaticParams() {
   }));
 }
 
-export default async function Post({
-  params,
-}: {
-  params: { slug: string };
-}) {
+export default async function Post({ params }: { params: Params }) {
   const postsDir = path.join(process.cwd(), 'posts');
-  const filePath = path.join(postsDir, `${params.slug}.md`);
+  const postPath = path.join(postsDir, `${params.slug}.md`);
 
-  if (!fs.existsSync(filePath)) {
-    return { notFound: true };
+  if (!fs.existsSync(postPath)) {
+    return {
+      notFound: true,
+    };
   }
 
-  const fileContents = fs.readFileSync(filePath, 'utf8');
+  const fileContents = fs.readFileSync(postPath, 'utf8');
   const { data, content } = matter(fileContents);
 
   const processedContent = await remark().use(html).process(content);
