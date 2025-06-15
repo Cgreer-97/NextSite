@@ -4,25 +4,36 @@ import matter from 'gray-matter';
 import { remark } from 'remark';
 import html from 'remark-html';
 
+type Props = {
+  params: { slug: string };
+};
+
+// REQUIRED for static site generation
 export async function generateStaticParams() {
-  const files = fs.readdirSync('posts');
-  return files.map((file) => ({
-    slug: file.replace(/\.md$/, ''),
+  const postsDir = path.join(process.cwd(), 'posts');
+  const files = fs.readdirSync(postsDir);
+
+  return files.map((filename) => ({
+    slug: filename.replace(/\.md$/, ''),
   }));
 }
 
-export default async function BlogPost({ params }) {
-  const filePath = path.join('posts', `${params.slug}.md`);
-  const fileContent = fs.readFileSync(filePath, 'utf8');
+export default async function Post({ params }: Props) {
+  const filePath = path.join(process.cwd(), 'posts', `${params.slug}.md`);
+  
+  if (!fs.existsSync(filePath)) {
+    return { notFound: true }; // fallback if file doesn't exist
+  }
 
+  const fileContent = fs.readFileSync(filePath, 'utf8');
   const { data, content } = matter(fileContent);
   const processedContent = await remark().use(html).process(content);
   const contentHtml = processedContent.toString();
 
   return (
-    <main className="p-6 max-w-2xl mx-auto">
-      <h1 className="text-3xl font-bold">{data.title}</h1>
-      <p className="text-sm text-gray-500">{data.date}</p>
+    <main className="prose p-6 max-w-2xl mx-auto">
+      <h1>{data.title}</h1>
+      <p>{data.date}</p>
       <div dangerouslySetInnerHTML={{ __html: contentHtml }} />
     </main>
   );
