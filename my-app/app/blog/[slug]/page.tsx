@@ -12,6 +12,8 @@ export async function generateStaticParams() {
   const postsDir = path.join(process.cwd(), 'posts');
   const filenames = fs.readdirSync(postsDir);
 
+  console.log('Generating static params for slugs:', filenames);
+
   return filenames.map((filename) => ({
     slug: filename.replace(/\.md$/, ''),
   }));
@@ -35,8 +37,8 @@ export default async function Post({ params }: { params: Params }) {
 
   return (
     <main className="prose p-6 max-w-2xl mx-auto">
-      <h1>{data.title}</h1>
-      <p>{data.date}</p>
+      <h1>{data.title || params.slug}</h1>
+      <p>{data.date || ''}</p>
       <article dangerouslySetInnerHTML={{ __html: contentHtml }} />
     </main>
   );
