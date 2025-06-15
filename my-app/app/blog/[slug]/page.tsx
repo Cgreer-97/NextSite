@@ -4,11 +4,6 @@ import matter from 'gray-matter';
 import { remark } from 'remark';
 import html from 'remark-html';
 
-type Props = {
-  params: { slug: string };
-};
-
-// Tell Next.js which slugs to pre-render at build time
 export async function generateStaticParams() {
   const postsDir = path.join(process.cwd(), 'posts');
   const filenames = fs.readdirSync(postsDir);
@@ -18,7 +13,11 @@ export async function generateStaticParams() {
   }));
 }
 
-export default async function Post({ params }: Props) {
+export default async function Post({
+  params,
+}: {
+  params: { slug: string };
+}) {
   const postsDir = path.join(process.cwd(), 'posts');
   const filePath = path.join(postsDir, `${params.slug}.md`);
 
