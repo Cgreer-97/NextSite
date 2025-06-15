@@ -12,32 +12,33 @@ export async function generateStaticParams() {
   const postsDir = path.join(process.cwd(), 'posts');
   const filenames = fs.readdirSync(postsDir);
 
-  console.log('Generating static params for slugs:', filenames);
-
   return filenames.map((filename) => ({
     slug: filename.replace(/\.md$/, ''),
   }));
 }
 
-export default async function Post({ params }: { params: Params }) {
+// Non-async component
+export default function Post({ params }: { params: Params }) {
+  const { slug } = params;
   const postsDir = path.join(process.cwd(), 'posts');
-  const postPath = path.join(postsDir, `${params.slug}.md`);
+  const postPath = path.join(postsDir, `${slug}.md`);
 
   if (!fs.existsSync(postPath)) {
-    return {
-      notFound: true,
-    };
+    // Optionally you can throw or return notFound component here if you want
+    return <p>Post not found</p>;
   }
 
+  // Read and process markdown content synchronously (since component is sync)
   const fileContents = fs.readFileSync(postPath, 'utf8');
   const { data, content } = matter(fileContents);
 
-  const processedContent = await remark().use(html).process(content);
+  // We can't use `await` inside sync component, so we use remark synchronously with `.processSync`
+  const processedContent = remark().use(html).processSync(content);
   const contentHtml = processedContent.toString();
 
   return (
     <main className="prose p-6 max-w-2xl mx-auto">
-      <h1>{data.title || params.slug}</h1>
+      <h1>{data.title || slug}</h1>
       <p>{data.date || ''}</p>
       <article dangerouslySetInnerHTML={{ __html: contentHtml }} />
     </main>
