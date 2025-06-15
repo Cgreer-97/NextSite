@@ -8,25 +8,27 @@ type Props = {
   params: { slug: string };
 };
 
-// REQUIRED for static site generation
+// Tell Next.js which slugs to pre-render at build time
 export async function generateStaticParams() {
   const postsDir = path.join(process.cwd(), 'posts');
-  const files = fs.readdirSync(postsDir);
+  const filenames = fs.readdirSync(postsDir);
 
-  return files.map((filename) => ({
+  return filenames.map((filename) => ({
     slug: filename.replace(/\.md$/, ''),
   }));
 }
 
 export default async function Post({ params }: Props) {
-  const filePath = path.join(process.cwd(), 'posts', `${params.slug}.md`);
-  
+  const postsDir = path.join(process.cwd(), 'posts');
+  const filePath = path.join(postsDir, `${params.slug}.md`);
+
   if (!fs.existsSync(filePath)) {
-    return { notFound: true }; // fallback if file doesn't exist
+    return { notFound: true };
   }
 
-  const fileContent = fs.readFileSync(filePath, 'utf8');
-  const { data, content } = matter(fileContent);
+  const fileContents = fs.readFileSync(filePath, 'utf8');
+  const { data, content } = matter(fileContents);
+
   const processedContent = await remark().use(html).process(content);
   const contentHtml = processedContent.toString();
 
@@ -34,7 +36,7 @@ export default async function Post({ params }: Props) {
     <main className="prose p-6 max-w-2xl mx-auto">
       <h1>{data.title}</h1>
       <p>{data.date}</p>
-      <div dangerouslySetInnerHTML={{ __html: contentHtml }} />
+      <article dangerouslySetInnerHTML={{ __html: contentHtml }} />
     </main>
   );
 }
