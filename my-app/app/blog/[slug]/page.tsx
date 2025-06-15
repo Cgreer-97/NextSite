@@ -17,22 +17,20 @@ export async function generateStaticParams() {
   }));
 }
 
-// Non-async component
+// Make the page component SYNC (not async)
 export default function Post({ params }: { params: Params }) {
   const { slug } = params;
   const postsDir = path.join(process.cwd(), 'posts');
   const postPath = path.join(postsDir, `${slug}.md`);
 
   if (!fs.existsSync(postPath)) {
-    // Optionally you can throw or return notFound component here if you want
     return <p>Post not found</p>;
   }
 
-  // Read and process markdown content synchronously (since component is sync)
   const fileContents = fs.readFileSync(postPath, 'utf8');
   const { data, content } = matter(fileContents);
 
-  // We can't use `await` inside sync component, so we use remark synchronously with `.processSync`
+  // Use remark synchronously
   const processedContent = remark().use(html).processSync(content);
   const contentHtml = processedContent.toString();
 
