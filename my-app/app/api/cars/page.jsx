@@ -1,75 +1,120 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
 export default function CarsPage() {
   const [cars, setCars] = useState([])
-  const [form, setForm] = useState({ make: '', model: '', year: '' })
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [newCar, setNewCar] = useState({ make: '', model: '', year: '' })
 
+  // Fetch all cars on mount
   useEffect(() => {
-    fetch('/api/cars')
-      .then(res => res.json())
-      .then(setCars)
+    fetchCars()
   }, [])
 
-  const handleChange = e => {
-    setForm({ ...form, [e.target.name]: e.target.value })
+  async function fetchCars() {
+    setLoading(true)
+    try {
+      const res = await fetch('/api/cars')
+      if (!res.ok) throw new Error('Failed to fetch cars')
+      const data = await res.json()
+      setCars(data)
+      setError(null)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const handleSubmit = async e => {
+  async function handleAddCar(e) {
     e.preventDefault()
-    if (!form.make || !form.model || !form.year) return
-    const res = await fetch('/api/cars', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
-    })
-    const newCar = await res.json()
-    setCars([...cars, newCar])
-    setForm({ make: '', model: '', year: '' })
+    try {
+      const res = await fetch('/api/cars', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newCar),
+      })
+      if (!res.ok) throw new Error('Failed to add car')
+      const created = await res.json()
+      setCars(prev => [...prev, created])
+      setNewCar({ make: '', model: '', year: '' })
+      setError(null)
+    } catch (err) {
+      setError(err.message)
+    }
   }
+
+  async function handleDelete(id) {
+    try {
+      const res = await fetch(`/api/cars/${id}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error('Failed to delete car')
+      setCars(prev => prev.filter(car => car.id !== id))
+      setError(null)
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
+
+
+  if (loading) return <p className="p-6">Loading cars...</p>
+  if (error) return <p className="p-6 text-red-600">Error: {error}</p>
 
   return (
-    <main className="p-4">
-      <h1 className="text-2xl font-bold mb-4">Cars</h1>
+    <main className="p-6 max-w-3xl mx-auto">
+      <h1 className="text-3xl font-bold mb-4">Cars List</h1>
 
-      <form onSubmit={handleSubmit} className="mb-6 space-x-2">
+      <form onSubmit={handleAddCar} className="mb-6 space-y-2">
         <input
-          name="make"
+          type="text"
           placeholder="Make"
-          value={form.make}
-          onChange={handleChange}
+          value={newCar.make}
+          onChange={e => setNewCar({ ...newCar, make: e.target.value })}
           required
-          className="border p-1"
+          className="border p-2 rounded w-full"
         />
         <input
-          name="model"
+          type="text"
           placeholder="Model"
-          value={form.model}
-          onChange={handleChange}
+          value={newCar.model}
+          onChange={e => setNewCar({ ...newCar, model: e.target.value })}
           required
-          className="border p-1"
+          className="border p-2 rounded w-full"
         />
         <input
-          name="year"
+          type="number"
           placeholder="Year"
-          value={form.year}
-          onChange={handleChange}
+          value={newCar.year}
+          onChange={e => setNewCar({ ...newCar, year: e.target.value })}
           required
-          className="border p-1"
+          className="border p-2 rounded w-full"
         />
-        <button type="submit" className="bg-blue-500 text-white px-3 py-1 rounded">
+        <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded">
           Add Car
         </button>
       </form>
 
-      <ul>
-        {cars.map(car => (
-          <li key={car.id}>
-            {car.make} {car.model} ({car.year})
-          </li>
-        ))}
-      </ul>
+      {cars.length === 0 ? (
+        <p>No cars found.</p>
+      ) : (
+        <ul className="list-disc pl-5 space-y-2">
+          {cars.map(({ id, make, model, year }) => (
+            <li key={id} className="flex justify-between items-center">
+              <span>
+                {make} {model} ({year})
+              </span>
+              <button
+                onClick={() => handleDelete(id)}
+                className="text-red-600 hover:underline"
+              >
+                Delete
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
     </main>
   )
 }

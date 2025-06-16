@@ -1,19 +1,15 @@
 import { NextResponse } from 'next/server'
-import { cars, saveCars } from '@/lib/db'
+import { updateCar, deleteCar } from '../../../../lib/db'
 
 export async function PUT(req, { params }) {
   const data = await req.json()
-  const i = cars.findIndex(c => c.id == params.id)
-  if (i === -1) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-  cars[i] = { ...cars[i], ...data }
-  saveCars()
-  return NextResponse.json(cars[i])
+  const updated = updateCar(params.id, data)
+  if (!updated) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  return NextResponse.json(updated)
 }
 
 export async function DELETE(req, { params }) {
-  const i = cars.findIndex(c => c.id == params.id)
-  if (i === -1) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-  cars.splice(i, 1)
-  saveCars()
+  const success = deleteCar(params.id)
+  if (!success) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   return NextResponse.json({ ok: true })
 }
