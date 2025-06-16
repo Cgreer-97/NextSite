@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { updateCar, deleteCar } from '../../../../lib/db'
+
 
 export async function PUT(req, { params }) {
   const data = await req.json()
