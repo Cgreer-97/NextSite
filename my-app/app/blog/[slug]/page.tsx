@@ -1,38 +1,38 @@
-import fs from 'fs';
-import path from 'path';
-import matter from 'gray-matter';
-import { remark } from 'remark';
-import html from 'remark-html';
+import fs from 'fs/promises'
+import path from 'path'
+import matter from 'gray-matter'
+import { remark } from 'remark'
+import html from 'remark-html'
 
 type Params = {
-  slug: string;
-};
+  slug: string
+}
 
 export async function generateStaticParams() {
-  const postsDir = path.join(process.cwd(), 'posts');
-  const filenames = fs.readdirSync(postsDir);
+  const postsDir = path.join(process.cwd(), 'posts')
+  const filenames = await fs.readdir(postsDir)
 
   return filenames.map((filename) => ({
     slug: filename.replace(/\.md$/, ''),
-  }));
+  }))
 }
 
-// Make the page component SYNC (not async)
-export default function Post({ params }: { params: Params }) {
-  const { slug } = params;
-  const postsDir = path.join(process.cwd(), 'posts');
-  const postPath = path.join(postsDir, `${slug}.md`);
+export default async function Post({ params }: { params: Params }) {
+  const { slug } = params
+  const postsDir = path.join(process.cwd(), 'posts')
+  const postPath = path.join(postsDir, `${slug}.md`)
 
-  if (!fs.existsSync(postPath)) {
-    return <p>Post not found</p>;
+  let fileContents: string
+  try {
+    fileContents = await fs.readFile(postPath, 'utf8')
+  } catch {
+    return <p>Post not found</p>
   }
 
-  const fileContents = fs.readFileSync(postPath, 'utf8');
-  const { data, content } = matter(fileContents);
+  const { data, content } = matter(fileContents)
 
-  // Use remark synchronously
-  const processedContent = remark().use(html).processSync(content);
-  const contentHtml = processedContent.toString();
+  const processedContent = await remark().use(html).process(content)
+  const contentHtml = processedContent.toString()
 
   return (
     <main className="prose p-6 max-w-2xl mx-auto">
@@ -40,5 +40,5 @@ export default function Post({ params }: { params: Params }) {
       <p>{data.date || ''}</p>
       <article dangerouslySetInnerHTML={{ __html: contentHtml }} />
     </main>
-  );
+  )
 }
